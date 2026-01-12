@@ -21,7 +21,7 @@ Example:
     >>> lmfast.serve("./my_model", mcp=True)
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __author__ = "Gaurav Chauhan"
 
 import logging
@@ -196,6 +196,7 @@ def train(
 def serve(
     model: str,
     port: int = 8000,
+    host: str = "0.0.0.0",
     mcp: bool = False,
     mcp_name: str = "lmfast-server",
     use_vllm: bool = True,

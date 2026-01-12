@@ -38,7 +38,7 @@ def test_serve_functional_http():
         lmfast.serve("test-model", port=9000)
         
         MockServer.assert_called_with("test-model", use_vllm=True)
-        mock_instance.serve.assert_called_with(port=9000)
+        mock_instance.serve.assert_called_with(host="0.0.0.0", port=9000)
 
 @patch("lmfast.mcp.server.LMFastMCPServer")
 @patch.dict("sys.modules", {"mcp": MagicMock(), "mcp.server.fastmcp": MagicMock()})
