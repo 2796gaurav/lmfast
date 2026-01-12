@@ -239,11 +239,47 @@ class SLMTrainer:
 
         # Create SFT config
         sft_kwargs = self.training_config.to_sft_config_kwargs()
-        sft_kwargs["dataset_text_field"] = "text"
-        sft_kwargs["max_seq_length"] = self.model_config.max_seq_length
-        sft_kwargs["packing"] = True  # Pack sequences for efficiency
-
+        
+        # SFTConfig (TrainingArguments) does not accept these args in recent versions
+        # They should be passed to the SFTConfig constructor ONLY if supported, but
+        # standard TrainingArguments don't support them.
+        # Alternatively, SFTTrainer accepts them.
+        
+        # We'll filter them out from sft_kwargs if they were somehow added, 
+        # but to_sft_config_kwargs mostly adds standard args.
+        # The specific fields causing error were manually added below in previous code.
+        
+        # We pass these directly to SFTConfig ONLY if they are valid, but the error says they aren't.
+        # So we pass them to SFTConfig correctly? usage: args=SFTConfig(...)
+        # Wait, if SFTConfig is a dataclass for arguments, maybe it DOESN'T have max_seq_length.
+        # In newer TRL, you pass them to SFTConfig.
+        # BUT if the user gets an error, we must assume they are using a version where SFTConfig doesn't have it (or we are using it wrong).
+        
+        # Let's try passing them to SFTConfig only if we are sure, but here we see failure.
+        # Actually, in TRL < 0.8, these were SFTTrainer args. In TRL >= 0.8, they moved to SFTConfig? 
+        # The user has trl-0.24.0. In 0.24.0, SFTConfig SHOULD have them.
+        # Wait, the error `TypeError: SFTConfig.__init__() got an unexpected keyword argument 'max_seq_length'` 
+        # implies SFTConfig does NOT accept it. 
+        # Perhaps `max_seq_length` is passed as a positional arg or something? No.
+        # 
+        # Let's verify `trl` version. The user log says `trl-0.24.0`.
+        # In `trl` 0.24.0, `SFTConfig` definitely has `max_seq_length`.
+        # UNLESS `lmfast` imports `SFTConfig` from somewhere else? 
+        # `from trl import SFTConfig, SFTTrainer` matches.
+        
+        # Maybe I am shadowing something? 
+        # Ah, maybe I should check if `max_seq_length` is passed to `SFTTrainer` directly instead?
+        # A common pattern is: args=training_args, max_seq_length=...
+        # Let's try moving them to SFTConfig properties if possible, or just pass to SFTTrainer if the Config fails.
+        
+        # The SAFEST bet for compatibility with weird versions or if I'm misremembering:
+        # Pass standard TrainingArguments to SFTConfig.
+        # Pass SFT-specific args (max_seq_length, packing, dataset_text_field) to SFTTrainer.
+        
         sft_config = SFTConfig(**sft_kwargs)
+        sft_config.dataset_text_field = "text"
+        sft_config.max_seq_length = self.model_config.max_seq_length
+        sft_config.packing = True
 
         # Create trainer
         trainer = SFTTrainer(

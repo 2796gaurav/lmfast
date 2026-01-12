@@ -21,11 +21,22 @@ Example:
     >>> lmfast.serve("./my_model", mcp=True)
 """
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __author__ = "Gaurav Chauhan"
 
 import logging
 from typing import Any, Optional
+import importlib.util
+
+# Try to import unsloth first if available to prevent import order issues/warnings
+# This must happen before transformers is imported by other lmfast modules
+if importlib.util.find_spec("unsloth"):
+    try:
+        import unsloth
+    except (ImportError, RuntimeError, Exception):
+        # Unsloth might fail if no GPU is present (NotImplementedError), etc.
+        # We process this silently as we just want to ensure import order if it works.
+        pass
 
 # Core imports
 from lmfast.core.config import (

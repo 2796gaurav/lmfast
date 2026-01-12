@@ -102,7 +102,6 @@ class SLMConfig(BaseModel):
             return "~1.5-1.7B parameters"
         return "Unknown size"
 
-    @property
     def is_colab_t4_compatible(self) -> bool:
         """Check if configuration is optimized for Colab T4."""
         return self.load_in_4bit and self.use_gradient_checkpointing and self.max_seq_length <= 4096
