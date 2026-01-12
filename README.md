@@ -15,10 +15,14 @@
 | 🎯 **T4 Optimized** | Train on free Colab T4 (12GB) with QLoRA + gradient checkpointing |
 | ⚡ **Fast Training** | Unsloth integration for 2-5x faster fine-tuning |
 | 🧠 **Distillation** | Transfer knowledge from larger models to tiny ones |
+| 🤖 **Agents** | Tool-using agents and orchestration framework |
+| 📚 **RAG** | Lightweight document retrieval and indexing |
+| 🌐 **Browser** | Deploy to browser via ONNX/WebLLM (no server costs) |
 | 🛡️ **Guardrails** | PII detection, toxicity filtering, prompt injection protection |
 | 📊 **Observability** | Langfuse integration, metrics, attention visualization |
 | 🚀 **Fast Inference** | vLLM backend with OpenAI-compatible API |
 | 📦 **Easy Export** | GGUF, INT4, AWQ, GPTQ quantization |
+| 🧩 **MCP** | Native Model Context Protocol server support |
 
 ---
 

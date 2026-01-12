@@ -243,6 +243,15 @@ def _load_with_unsloth(
         return None, tokenizer
 
 
+    return model
+
+
+def _is_flash_attention_available() -> bool:
+    """Check if flash_attn is installed and compatible."""
+    import importlib.util
+    return importlib.util.find_spec("flash_attn") is not None
+
+
 def _load_with_transformers(
     config: SLMConfig,
     **kwargs,
@@ -251,6 +260,12 @@ def _load_with_transformers(
     model_kwargs = config.to_transformers_kwargs()
     model_kwargs.update(kwargs)
 
+    # Check safe attention implementation
+    if model_kwargs.get("attn_implementation") == "flash_attention_2":
+        if not _is_flash_attention_available():
+            logger.warning("Flash Attention 2 requested but not installed. Falling back to default.")
+            model_kwargs.pop("attn_implementation", None)
+    
     logger.info(f"Loading with transformers: {model_kwargs}")
 
     try:
@@ -259,9 +274,9 @@ def _load_with_transformers(
             **model_kwargs,
         )
     except Exception as e:
-        # Fallback: try without flash attention
-        if "flash_attention" in str(e).lower():
-            logger.warning("Flash Attention not available, falling back to standard attention")
+        # Fallback for any other attention errors
+        if "flash_attention" in str(e).lower() or "flash attention" in str(e).lower():
+            logger.warning(f"Attention error ({e}), falling back to standard attention")
             model_kwargs.pop("attn_implementation", None)
             model = AutoModelForCausalLM.from_pretrained(
                 config.model_name,

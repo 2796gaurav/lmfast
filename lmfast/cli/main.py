@@ -220,13 +220,37 @@ def serve(
         "--vllm/--no-vllm",
         help="Use vLLM for fast inference",
     ),
+    mcp: bool = typer.Option(
+        False,
+        "--mcp",
+        help="Run as MCP server (Model Context Protocol)",
+    ),
+    mcp_name: str = typer.Option(
+        "lmfast-server",
+        "--mcp-name",
+        help="Name of the MCP server",
+    ),
 ):
     """
-    Start an inference server with OpenAI-compatible API.
+    Start an inference server with OpenAI-compatible API or MCP.
 
     Example:
         lmfast serve --model ./my_model --port 8000
+        lmfast serve --model ./my_model --mcp
     """
+    if mcp:
+        from lmfast.mcp.server import LMFastMCPServer
+        
+        console.print("\n[bold blue]LMFast MCP Server[/bold blue]")
+        console.print(f"Model: {model}")
+        console.print(f"Name: {mcp_name}")
+        console.print("Transport: stdio")
+        console.print()
+        
+        server = LMFastMCPServer(model, name=mcp_name)
+        server.run()
+        return
+
     from lmfast.inference import SLMServer
 
     console.print("\n[bold blue]LMFast Inference Server[/bold blue]")

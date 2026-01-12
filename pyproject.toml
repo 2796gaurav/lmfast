@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lmfast"
-version = "0.1.0"
+version = "0.3.1"
 description = "Democratized Small Language Model Training - Train, fine-tune, distill, and deploy sub-500M parameter models on Colab T4 in 30-40 minutes"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -61,6 +61,7 @@ dependencies = [
     # Utilities
     "tqdm>=4.65.0",
     "numpy>=1.24.0",
+    "mcp>=0.1.0",
 ]
 
 [project.optional-dependencies]
