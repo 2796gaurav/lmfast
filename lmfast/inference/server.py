@@ -50,6 +50,7 @@ class SLMServer:
         config: InferenceConfig | None = None,
         *,
         use_vllm: bool | None = None,
+        use_unsloth: bool = True,
     ):
         """
         Initialize inference server.
@@ -58,6 +59,7 @@ class SLMServer:
             model_path: Path to model or HuggingFace ID
             config: Inference configuration
             use_vllm: Override config to use/not use vLLM
+            use_unsloth: Attempt to use Unsloth for optimization (if installed)
         """
         self.model_path = model_path
         self.config = config or InferenceConfig()
@@ -65,6 +67,7 @@ class SLMServer:
         if use_vllm is not None:
             self.config.use_vllm = use_vllm
 
+        self.use_unsloth = use_unsloth
         self._model = None
         self._tokenizer = None
         self._vllm_engine = None
@@ -135,7 +138,7 @@ class SLMServer:
         model, tokenizer = load_model(
             model_config,
             for_training=False,
-            use_unsloth=False,
+            use_unsloth=self.use_unsloth,
         )
         self._model = model
         self._tokenizer = tokenizer
