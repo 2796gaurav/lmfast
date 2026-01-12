@@ -51,14 +51,14 @@ class TestSLMConfig:
             use_gradient_checkpointing=True,
             max_seq_length=2048,
         )
-        assert config.is_colab_t4_compatible is True
+        assert config.is_colab_t4_compatible() is True
 
         # Not compatible (no 4-bit)
         config = SLMConfig(
             load_in_4bit=False,
             use_gradient_checkpointing=True,
         )
-        assert config.is_colab_t4_compatible is False
+        assert config.is_colab_t4_compatible() is False
 
     def test_model_size_estimate(self):
         """Test model size estimation."""
