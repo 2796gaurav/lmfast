@@ -105,8 +105,8 @@ def get_model_info(model_name: str) -> dict[str, Any]:
 def load_tokenizer(
     model_name: str,
     *,
-    trust_remote_code: bool = False,
-    padding_side: str = "right",
+    trust_remote_code: bool = True,
+    padding_side: str = "left",
     add_eos_token: bool = True,
     **kwargs,
 ) -> TokenizerType:
@@ -131,7 +131,7 @@ def load_tokenizer(
         **kwargs,
     )
 
-    # Set padding side
+    # Set padding side (Left is better for batch inference)
     tokenizer.padding_side = padding_side
 
     # Ensure pad token exists

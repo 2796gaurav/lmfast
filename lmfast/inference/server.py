@@ -130,9 +130,17 @@ class SLMServer:
         """Load with transformers."""
         logger.info("Loading model with transformers...")
 
+        from lmfast.core.config import DType
+
+        # Detect if model path indicates quantization
+        load_in_4bit = self.config.quantization == "int4" or "int4" in self.model_path.lower()
+        load_in_8bit = self.config.quantization == "int8" or "int8" in self.model_path.lower()
+
         model_config = SLMConfig(
             model_name=self.model_path,
-            load_in_4bit=self.config.quantization == "int4",
+            load_in_4bit=load_in_4bit,
+            load_in_8bit=load_in_8bit,
+            dtype=DType.FLOAT16,
         )
 
         model, tokenizer = load_model(
@@ -266,6 +274,9 @@ class SLMServer:
         model = self.model
         tokenizer = self.tokenizer
 
+        # Ensure left padding for inference
+        tokenizer.padding_side = "left"
+
         # Tokenize
         inputs = tokenizer(
             prompts,
@@ -291,10 +302,14 @@ class SLMServer:
         # Decode
         responses = []
         for i, output in enumerate(outputs):
-            # Remove input tokens
+            # Prompt length in tokens (including left padding)
             input_len = inputs["input_ids"][i].shape[0]
+            
+            # Extract generated tokens
+            generated_tokens = output[input_len:]
+            
             response = tokenizer.decode(
-                output[input_len:],
+                generated_tokens,
                 skip_special_tokens=True,
             )
             responses.append(response)

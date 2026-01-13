@@ -172,29 +172,54 @@ def export_gguf(
         >>> export_gguf("./my_model", "./my_model.gguf", quantization="q4_k_m")
     """
     import subprocess
+    import os
+    import sys
     from shutil import which
 
     out_path = Path(output_path)
 
-    # Check for llama.cpp convert script
-    if which("convert-hf-to-gguf.py") is None:
-        logger.warning(
-            "llama.cpp conversion script not found. "
-            "Please install llama.cpp and ensure convert-hf-to-gguf.py is in PATH"
-        )
+    # Check for llama.cpp convert script in PATH
+    convert_script = which("convert-hf-to-gguf.py")
+    
+    # If not in PATH, look for it in local llama.cpp dir or clone it
+    if convert_script is None:
+        llama_cpp_dir = Path("llama.cpp")
+        convert_script_path = llama_cpp_dir / "convert_hf_to_gguf.py" # New name
+        convert_script_path_old = llama_cpp_dir / "convert-hf-to-gguf.py" # Old name
+        
+        if not llama_cpp_dir.exists():
+            logger.info("llama.cpp not found. Cloning from GitHub...")
+            try:
+                subprocess.run(
+                    ["git", "clone", "https://github.com/ggerganov/llama.cpp.git"], 
+                    check=True, 
+                    capture_output=True
+                )
+                logger.info("Cloned llama.cpp successfully.")
+                
+                # Install requirements
+                logger.info("Installing llama.cpp requirements...")
+                subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "-r", str(llama_cpp_dir / "requirements.txt")],
+                    check=True,
+                    capture_output=True
+                )
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"Failed to setup llama.cpp: {e}")
 
-        # Try alternate approach using huggingface_hub
-        try:
-            return _export_gguf_online(model_path, out_path, quantization)
-        except Exception as e:
-            raise RuntimeError(
-                f"GGUF export failed: {e}. " "Please install llama.cpp for local conversion."
-            ) from e
+        if convert_script_path.exists():
+            convert_script = str(convert_script_path)
+        elif convert_script_path_old.exists():
+            convert_script = str(convert_script_path_old)
+        else:
+             raise RuntimeError("Could not find convert_hf_to_gguf.py in llama.cpp directory")
+
+    logger.info(f"Using conversion script: {convert_script}")
 
     # Run conversion
     cmd = [
-        "python",
-        "convert-hf-to-gguf.py",
+        sys.executable,
+        convert_script,
         model_path,
         "--outfile",
         str(out_path),
@@ -202,10 +227,14 @@ def export_gguf(
         quantization,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
-    if result.returncode != 0:
-        raise RuntimeError(f"GGUF conversion failed: {result.stderr}")
+    try:
+        logger.info(f"Running GGUF conversion command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        logger.info(result.stdout)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"GGUF conversion failed output: {e.stdout}")
+        logger.error(f"GGUF conversion failed errors: {e.stderr}")
+        raise RuntimeError(f"GGUF conversion failed: {e.stderr}")
 
     logger.info(f"GGUF model exported to {output_path}")
     return out_path

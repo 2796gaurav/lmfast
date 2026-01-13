@@ -135,13 +135,22 @@ class BrowserExporter:
         
         logger.info("Converting to ONNX format...")
         
+        # Suppress warnings during export
+        import warnings
+        from torch.jit import TracerWarning
+        warnings.filterwarnings("ignore", category=TracerWarning)
+        warnings.filterwarnings("ignore", message=".*torch_dtype.*")
+        
         # Load and export
+        # Optimum uses 'dtype' internally, we can pass it via kwargs if needed
+        # but the warning "torch_dtype is deprecated" often comes from underlying transformers call
         model = ORTModelForCausalLM.from_pretrained(
             str(self.model_path),
             export=True,
-            provider="CPUExecutionProvider"
+            provider="CPUExecutionProvider",
+            trust_remote_code=True
         )
-        tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
+        tokenizer = AutoTokenizer.from_pretrained(str(self.model_path), trust_remote_code=True)
         
         # Save
         model.save_pretrained(onnx_path)
