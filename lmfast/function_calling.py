@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +39,14 @@ class FunctionCaller:
             code_block_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
             match = re.search(code_block_pattern, response, re.DOTALL)
             if match:
-                return json.loads(match.group(1))
+                return cast(dict[str, Any], json.loads(match.group(1)))
 
             # 2. Try to find the outermost JSON object
             start = response.find("{")
             end = response.rfind("}") + 1
             if start != -1 and end != -1:
                 json_str = response[start:end]
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
 
         except Exception as e:
             logger.debug(f"JSON parsing failed: {e}")
