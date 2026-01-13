@@ -277,9 +277,16 @@ class SLMTrainer:
         # Pass SFT-specific args (max_seq_length, packing, dataset_text_field) to SFTTrainer.
 
         sft_config = SFTConfig(**sft_kwargs)
-        sft_config.dataset_text_field = "text"
-        sft_config.max_seq_length = self.model_config.max_seq_length
-        sft_config.packing = True
+
+        # Safely set attributes based on TRL version
+        for attr, value in [
+            ("dataset_text_field", "text"),
+            ("max_seq_length", self.model_config.max_seq_length),
+            ("max_length", self.model_config.max_seq_length),
+            ("packing", True),
+        ]:
+            if hasattr(sft_config, attr):
+                setattr(sft_config, attr, value)
 
         # Create trainer
         trainer = SFTTrainer(
