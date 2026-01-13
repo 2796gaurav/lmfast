@@ -28,7 +28,7 @@ import re
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal, cast
 
 from lmfast.agents.core import Agent
 
@@ -134,7 +134,7 @@ class ThinkingAgent(Agent):
         if method not in method_map:
             raise ValueError(f"Unknown method: {method}. Available: {list(method_map.keys())}")
 
-        return method_map[method](problem, effective_n, **kwargs)
+        return cast(str, method_map[method](problem, effective_n, **kwargs))
 
     def _best_of_n(
         self, problem: str, n: int, scorer: Callable[[str], float] | None = None, **kwargs
@@ -459,7 +459,7 @@ def reason(
         ... )
     """
     agent = ThinkingAgent(model_fn, n=n)
-    return agent.reason(problem, method=method, **kwargs)
+    return agent.reason(problem, method=cast(Any, method), **kwargs)
 
 
 # Specialized reasoning functions
