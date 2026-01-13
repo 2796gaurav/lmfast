@@ -172,7 +172,6 @@ def export_gguf(
         >>> export_gguf("./my_model", "./my_model.gguf", quantization="q4_k_m")
     """
     import subprocess
-    import os
     import sys
     from shutil import which
 
@@ -180,29 +179,36 @@ def export_gguf(
 
     # Check for llama.cpp convert script in PATH
     convert_script = which("convert-hf-to-gguf.py")
-    
+
     # If not in PATH, look for it in local llama.cpp dir or clone it
     if convert_script is None:
         llama_cpp_dir = Path("llama.cpp")
-        convert_script_path = llama_cpp_dir / "convert_hf_to_gguf.py" # New name
-        convert_script_path_old = llama_cpp_dir / "convert-hf-to-gguf.py" # Old name
-        
+        convert_script_path = llama_cpp_dir / "convert_hf_to_gguf.py"  # New name
+        convert_script_path_old = llama_cpp_dir / "convert-hf-to-gguf.py"  # Old name
+
         if not llama_cpp_dir.exists():
             logger.info("llama.cpp not found. Cloning from GitHub...")
             try:
                 subprocess.run(
-                    ["git", "clone", "https://github.com/ggerganov/llama.cpp.git"], 
-                    check=True, 
-                    capture_output=True
+                    ["git", "clone", "https://github.com/ggerganov/llama.cpp.git"],
+                    check=True,
+                    capture_output=True,
                 )
                 logger.info("Cloned llama.cpp successfully.")
-                
+
                 # Install requirements
                 logger.info("Installing llama.cpp requirements...")
                 subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "-r", str(llama_cpp_dir / "requirements.txt")],
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        str(llama_cpp_dir / "requirements.txt"),
+                    ],
                     check=True,
-                    capture_output=True
+                    capture_output=True,
                 )
             except subprocess.CalledProcessError as e:
                 raise RuntimeError(f"Failed to setup llama.cpp: {e}")
@@ -212,7 +218,7 @@ def export_gguf(
         elif convert_script_path_old.exists():
             convert_script = str(convert_script_path_old)
         else:
-             raise RuntimeError("Could not find convert_hf_to_gguf.py in llama.cpp directory")
+            raise RuntimeError("Could not find convert_hf_to_gguf.py in llama.cpp directory")
 
     logger.info(f"Using conversion script: {convert_script}")
 

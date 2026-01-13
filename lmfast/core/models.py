@@ -242,13 +242,13 @@ def _load_with_unsloth(
         logger.warning(f"Unsloth loading failed: {e}, falling back to standard loading")
         return None, tokenizer
 
-
     return model
 
 
 def _is_flash_attention_available() -> bool:
     """Check if flash_attn is installed and compatible."""
     import importlib.util
+
     return importlib.util.find_spec("flash_attn") is not None
 
 
@@ -263,9 +263,11 @@ def _load_with_transformers(
     # Check safe attention implementation
     if model_kwargs.get("attn_implementation") == "flash_attention_2":
         if not _is_flash_attention_available():
-            logger.warning("Flash Attention 2 requested but not installed. Falling back to default.")
+            logger.warning(
+                "Flash Attention 2 requested but not installed. Falling back to default."
+            )
             model_kwargs.pop("attn_implementation", None)
-    
+
     logger.info(f"Loading with transformers: {model_kwargs}")
 
     try:

@@ -5,7 +5,7 @@ Export models for in-browser inference using WebLLM, ONNX, or Transformers.js.
 
 Supports:
 - WebLLM (MLC format) - Best performance with WebGPU
-- ONNX Runtime Web - Cross-platform compatibility  
+- ONNX Runtime Web - Cross-platform compatibility
 - Transformers.js - Easy integration with HuggingFace
 
 Example:
@@ -17,9 +17,8 @@ Example:
 import json
 import logging
 import shutil
-import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +26,12 @@ logger = logging.getLogger(__name__)
 class BrowserExporter:
     """
     Export LMFast models for in-browser inference.
-    
+
     Targets:
     - webllm: Best performance, requires WebGPU (Chrome 113+)
     - onnx: Cross-platform, works with ONNX Runtime Web
     - transformers_js: Easy HuggingFace integration
-    
+
     Example:
         >>> exporter = BrowserExporter(
         ...     model_path="./my_model",
@@ -41,17 +40,17 @@ class BrowserExporter:
         ... )
         >>> exporter.export("./browser_model", create_demo=True)
     """
-    
+
     def __init__(
         self,
         model_path: str,
         target: Literal["webllm", "onnx", "transformers_js"] = "onnx",
         quantization: Literal["int4", "int8", "fp16"] = "int4",
-        context_length: int = 2048
+        context_length: int = 2048,
     ):
         """
         Initialize browser exporter.
-        
+
         Args:
             model_path: Path to model or HuggingFace model ID
             target: Export target format
@@ -62,35 +61,35 @@ class BrowserExporter:
         self.target = target
         self.quantization = quantization
         self.context_length = context_length
-        
+
         # Validate
         if not self.model_path.exists() and "/" not in str(model_path):
             raise ValueError(f"Model path does not exist: {model_path}")
-    
+
     def export(
         self,
         output_dir: str,
         split_size_mb: int = 100,
         create_demo: bool = True,
-        demo_framework: Literal["vanilla", "react", "vue"] = "vanilla"
-    ) -> Dict[str, Any]:
+        demo_framework: Literal["vanilla", "react", "vue"] = "vanilla",
+    ) -> dict[str, Any]:
         """
         Export model for browser deployment.
-        
+
         Args:
             output_dir: Output directory for exported files
             split_size_mb: Split weights into chunks of this size (MB)
             create_demo: Whether to generate a demo application
             demo_framework: Framework for demo app
-            
+
         Returns:
             Dictionary with paths to exported artifacts
         """
         out_path = Path(output_dir)
         out_path.mkdir(parents=True, exist_ok=True)
-        
+
         logger.info(f"Exporting {self.model_path} to {self.target} format...")
-        
+
         if self.target == "onnx":
             artifacts = self._export_onnx(out_path)
         elif self.target == "webllm":
@@ -99,48 +98,49 @@ class BrowserExporter:
             artifacts = self._export_transformers_js(out_path)
         else:
             raise ValueError(f"Unknown target: {self.target}")
-        
+
         if create_demo:
             demo_path = self._create_demo(out_path, demo_framework, artifacts)
-            artifacts["demo"] = str(demo_path)
-        
+            artifacts["demo"] = demo_path
+
         # Save export config
         config = {
             "model": str(self.model_path),
             "target": self.target,
             "quantization": self.quantization,
             "context_length": self.context_length,
-            "artifacts": {k: str(v) for k, v in artifacts.items()}
+            "artifacts": {k: str(v) for k, v in artifacts.items()},
         }
-        
+
         with open(out_path / "export_config.json", "w") as f:
             json.dump(config, f, indent=2)
-        
+
         logger.info(f"Export complete! Artifacts saved to {output_dir}")
         return artifacts
-    
-    def _export_onnx(self, output_path: Path) -> Dict[str, Path]:
+
+    def _export_onnx(self, output_path: Path) -> dict[str, Path]:
         """Export to ONNX format for ONNX Runtime Web."""
         try:
             from optimum.onnxruntime import ORTModelForCausalLM
             from transformers import AutoTokenizer
         except ImportError:
             raise ImportError(
-                "ONNX export requires optimum. "
-                "Install with: pip install optimum[onnxruntime]"
+                "ONNX export requires optimum. " "Install with: pip install optimum[onnxruntime]"
             )
-        
+
         onnx_path = output_path / "onnx"
         onnx_path.mkdir(exist_ok=True)
-        
+
         logger.info("Converting to ONNX format...")
-        
+
         # Suppress warnings during export
         import warnings
+
         from torch.jit import TracerWarning
+
         warnings.filterwarnings("ignore", category=TracerWarning)
         warnings.filterwarnings("ignore", message=".*torch_dtype.*")
-        
+
         # Load and export
         # Optimum uses 'dtype' internally, we can pass it via kwargs if needed
         # but the warning "torch_dtype is deprecated" often comes from underlying transformers call
@@ -148,69 +148,64 @@ class BrowserExporter:
             str(self.model_path),
             export=True,
             provider="CPUExecutionProvider",
-            trust_remote_code=True
+            trust_remote_code=True,
         )
         tokenizer = AutoTokenizer.from_pretrained(str(self.model_path), trust_remote_code=True)
-        
+
         # Save
         model.save_pretrained(onnx_path)
         tokenizer.save_pretrained(onnx_path)
-        
+
         # Apply quantization if needed
         if self.quantization in ["int4", "int8"]:
             self._quantize_onnx(onnx_path)
-        
+
         # Create web config
         web_config = {
             "model_path": "onnx/model.onnx",
             "tokenizer_path": "onnx/tokenizer.json",
             "context_length": self.context_length,
-            "quantization": self.quantization
+            "quantization": self.quantization,
         }
-        
+
         with open(output_path / "web_config.json", "w") as f:
             json.dump(web_config, f, indent=2)
-        
+
         return {
             "onnx_model": onnx_path / "model.onnx",
             "tokenizer": onnx_path / "tokenizer.json",
-            "config": output_path / "web_config.json"
+            "config": output_path / "web_config.json",
         }
-    
+
     def _quantize_onnx(self, onnx_path: Path):
         """Apply quantization to ONNX model."""
         try:
-            from onnxruntime.quantization import quantize_dynamic, QuantType
+            from onnxruntime.quantization import QuantType, quantize_dynamic
         except ImportError:
             logger.warning("onnxruntime quantization not available")
             return
-        
+
         model_path = onnx_path / "model.onnx"
         quantized_path = onnx_path / "model_quantized.onnx"
-        
+
         quant_type = QuantType.QInt8 if self.quantization == "int8" else QuantType.QUInt8
-        
-        quantize_dynamic(
-            str(model_path),
-            str(quantized_path),
-            weight_type=quant_type
-        )
-        
+
+        quantize_dynamic(str(model_path), str(quantized_path), weight_type=quant_type)
+
         # Replace original with quantized
         shutil.move(quantized_path, model_path)
         logger.info(f"Applied {self.quantization} quantization to ONNX model")
-    
-    def _export_webllm(self, output_path: Path, split_size_mb: int) -> Dict[str, Path]:
+
+    def _export_webllm(self, output_path: Path, split_size_mb: int) -> dict[str, Path]:
         """Export for WebLLM (MLC format)."""
         mlc_path = output_path / "mlc"
         mlc_path.mkdir(exist_ok=True)
-        
+
         logger.info("Exporting for WebLLM (MLC format)...")
         logger.warning(
-            "Full WebLLM export requires MLC-LLM toolkit. "
-            "Creating config for manual conversion."
+            "Full WebLLM export requires MLC-LLM toolkit. " "Creating config for manual conversion."
         )
-        
+
         # Create WebLLM config
         config = {
             "model_lib": "SmolLM-135M-Instruct-q4f16_1-MLC",
@@ -219,12 +214,12 @@ class BrowserExporter:
             "context_window_size": self.context_length,
             "sliding_window_size": -1,
             "attention_sink_size": -1,
-            "prefill_chunk_size": 512
+            "prefill_chunk_size": 512,
         }
-        
+
         with open(mlc_path / "mlc-chat-config.json", "w") as f:
             json.dump(config, f, indent=2)
-        
+
         # Create instructions
         instructions = f"""# WebLLM Export Instructions
 
@@ -246,31 +241,28 @@ import {{ CreateMLCEngine }} from "@anthropic-ai/sdk";
 const engine = await CreateMLCEngine("SmolLM-135M-Instruct-q4f16_1-MLC");
 ```
 """
-        
+
         with open(mlc_path / "README.md", "w") as f:
             f.write(instructions)
-        
-        return {
-            "config": mlc_path / "mlc-chat-config.json",
-            "readme": mlc_path / "README.md"
-        }
-    
-    def _export_transformers_js(self, output_path: Path) -> Dict[str, Path]:
+
+        return {"config": mlc_path / "mlc-chat-config.json", "readme": mlc_path / "README.md"}
+
+    def _export_transformers_js(self, output_path: Path) -> dict[str, Path]:
         """Export for Transformers.js."""
         tfjs_path = output_path / "transformers_js"
         tfjs_path.mkdir(exist_ok=True)
-        
+
         logger.info("Exporting for Transformers.js...")
-        
+
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM
-            
+            from transformers import AutoTokenizer
+
             # Load model and tokenizer
             tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
-            
+
             # Save tokenizer in correct format
             tokenizer.save_pretrained(tfjs_path)
-            
+
             # Create usage instructions
             usage = f"""# Transformers.js Usage
 
@@ -293,29 +285,21 @@ console.log(output[0].generated_text);
 - Quantization is applied by Transformers.js based on device
 - For best performance, use WebGPU-enabled browser
 """
-            
+
             with open(tfjs_path / "README.md", "w") as f:
                 f.write(usage)
-                
+
         except Exception as e:
             logger.error(f"Transformers.js export failed: {e}")
             raise
-        
-        return {
-            "tokenizer": tfjs_path / "tokenizer.json",
-            "readme": tfjs_path / "README.md"
-        }
-    
-    def _create_demo(
-        self, 
-        output_path: Path, 
-        framework: str,
-        artifacts: Dict[str, Path]
-    ) -> Path:
+
+        return {"tokenizer": tfjs_path / "tokenizer.json", "readme": tfjs_path / "README.md"}
+
+    def _create_demo(self, output_path: Path, framework: str, artifacts: dict[str, Path]) -> Path:
         """Create a demo application."""
         demo_path = output_path / "demo"
         demo_path.mkdir(exist_ok=True)
-        
+
         if framework == "vanilla":
             return self._create_vanilla_demo(demo_path, artifacts)
         elif framework == "react":
@@ -324,18 +308,18 @@ console.log(output[0].generated_text);
             return self._create_vue_demo(demo_path, artifacts)
         else:
             raise ValueError(f"Unknown framework: {framework}")
-    
-    def _create_vanilla_demo(self, demo_path: Path, artifacts: Dict) -> Path:
+
+    def _create_vanilla_demo(self, demo_path: Path, artifacts: dict) -> Path:
         """Create vanilla HTML/JS demo."""
-        
+
         if self.target == "onnx":
             demo_html = self._get_onnx_demo_html()
         else:
             demo_html = self._get_webllm_demo_html()
-        
+
         index_path = demo_path / "index.html"
         index_path.write_text(demo_html)
-        
+
         # Create simple CSS
         css = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -406,15 +390,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .footer { margin-top: 1.5rem; text-align: center; color: #666; font-size: 0.9rem; }
 .footer a { color: #667eea; }
 """
-        
+
         (demo_path / "style.css").write_text(css)
-        
+
         logger.info(f"Demo created at {demo_path / 'index.html'}")
         return demo_path / "index.html"
-    
+
     def _get_onnx_demo_html(self) -> str:
         """Get ONNX Runtime Web demo HTML."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -488,11 +472,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         loadModel();
     </script>
 </body>
-</html>'''
-    
+</html>"""
+
     def _get_webllm_demo_html(self) -> str:
         """Get WebLLM demo HTML."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -587,9 +571,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         loadModel();
     </script>
 </body>
-</html>'''
-    
-    def _create_react_demo(self, demo_path: Path, artifacts: Dict) -> Path:
+</html>"""
+
+    def _create_react_demo(self, demo_path: Path, artifacts: dict) -> Path:
         """Create React demo template."""
         readme = """# React Demo
 
@@ -605,8 +589,8 @@ Then copy the ONNX/WebLLM files to `public/` and use the provided code.
 """
         (demo_path / "README.md").write_text(readme)
         return demo_path / "README.md"
-    
-    def _create_vue_demo(self, demo_path: Path, artifacts: Dict) -> Path:
+
+    def _create_vue_demo(self, demo_path: Path, artifacts: dict) -> Path:
         """Create Vue demo template."""
         readme = """# Vue Demo
 
@@ -630,29 +614,26 @@ def export_for_browser(
     target: str = "onnx",
     quantization: str = "int4",
     create_demo: bool = True,
-    **kwargs
-) -> Dict[str, Any]:
+    **kwargs,
+) -> dict[str, Any]:
     """
     One-line browser export.
-    
+
     Args:
         model_path: Path to model
         output_dir: Output directory
         target: Export target (onnx, webllm, transformers_js)
         quantization: Quantization level
         create_demo: Create demo app
-        
+
     Returns:
         Exported artifact paths
-        
+
     Example:
         >>> from lmfast.deployment import export_for_browser
         >>> export_for_browser("./my_model", "./browser", target="onnx")
     """
     exporter = BrowserExporter(
-        model_path=model_path,
-        target=target,
-        quantization=quantization,
-        **kwargs
+        model_path=model_path, target=target, quantization=quantization, **kwargs
     )
     return exporter.export(output_dir, create_demo=create_demo)

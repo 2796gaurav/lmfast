@@ -240,15 +240,15 @@ def serve(
     """
     if mcp:
         from lmfast.mcp.server import LMFastMCPServer
-        
+
         console.print("\n[bold blue]LMFast MCP Server[/bold blue]")
         console.print(f"Model: {model}")
         console.print(f"Name: {mcp_name}")
         console.print("Transport: stdio")
         console.print()
-        
-        server = LMFastMCPServer(model, name=mcp_name)
-        server.run()
+
+        mcp_server = LMFastMCPServer(model, name=mcp_name)
+        mcp_server.run()
         return
 
     from lmfast.inference import SLMServer
@@ -258,8 +258,8 @@ def serve(
     console.print(f"Endpoint: http://{host}:{port}")
     console.print()
 
-    server = SLMServer(model, use_vllm=use_vllm)
-    server.serve(host=host, port=port)
+    http_server = SLMServer(model, use_vllm=use_vllm)
+    http_server.serve(host=host, port=port)
 
 
 @app.command()

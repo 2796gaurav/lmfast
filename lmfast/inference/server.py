@@ -304,10 +304,10 @@ class SLMServer:
         for i, output in enumerate(outputs):
             # Prompt length in tokens (including left padding)
             input_len = inputs["input_ids"][i].shape[0]
-            
+
             # Extract generated tokens
             generated_tokens = output[input_len:]
-            
+
             response = tokenizer.decode(
                 generated_tokens,
                 skip_special_tokens=True,

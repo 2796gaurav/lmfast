@@ -8,11 +8,11 @@ Provides:
 
 Example:
     >>> from lmfast.inference import SLMServer, SpeculativeDecoder
-    >>> 
+    >>>
     >>> # Standard inference
     >>> server = SLMServer("./my_model")
     >>> output = server.generate("Hello!")
-    >>> 
+    >>>
     >>> # Fast inference with speculative decoding
     >>> fast = SpeculativeDecoder("./my_model")
     >>> output = fast.generate("Hello!", max_tokens=100)
@@ -28,6 +28,7 @@ try:
         SpeculativeDecodingConfig,
         generate_fast,
     )
+
     _SPECULATIVE_AVAILABLE = True
 except ImportError:
     _SPECULATIVE_AVAILABLE = False
@@ -39,8 +40,10 @@ __all__ = [
 ]
 
 if _SPECULATIVE_AVAILABLE:
-    __all__.extend([
-        "SpeculativeDecoder",
-        "SpeculativeDecodingConfig",
-        "generate_fast",
-    ])
+    __all__.extend(
+        [
+            "SpeculativeDecoder",
+            "SpeculativeDecodingConfig",
+            "generate_fast",
+        ]
+    )

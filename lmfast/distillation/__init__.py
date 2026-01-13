@@ -13,12 +13,13 @@ from lmfast.distillation.teacher_student import DistillationTrainer
 # Try to import advanced distillation
 try:
     from lmfast.distillation.advanced import (
-        AdvancedDistillationTrainer,
         AdvancedDistillationConfig,
+        AdvancedDistillationTrainer,
         DistillationLoss,
         TAIDScheduler,
         distill_advanced,
     )
+
     _ADVANCED_AVAILABLE = True
 except ImportError:
     _ADVANCED_AVAILABLE = False
@@ -29,10 +30,12 @@ __all__ = [
 ]
 
 if _ADVANCED_AVAILABLE:
-    __all__.extend([
-        "AdvancedDistillationTrainer",
-        "AdvancedDistillationConfig", 
-        "DistillationLoss",
-        "TAIDScheduler",
-        "distill_advanced",
-    ])
+    __all__.extend(
+        [
+            "AdvancedDistillationTrainer",
+            "AdvancedDistillationConfig",
+            "DistillationLoss",
+            "TAIDScheduler",
+            "distill_advanced",
+        ]
+    )

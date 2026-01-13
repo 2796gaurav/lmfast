@@ -1,17 +1,17 @@
-
 import json
 import logging
-from typing import List, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 class FunctionCaller:
     """
     Utilities for function calling with SLMs.
     """
-    
+
     @staticmethod
-    def format_prompt(tools: List[Dict], query: str) -> str:
+    def format_prompt(tools: list[dict], query: str) -> str:
         """
         Format tools and query into a prompt the model can understand.
         Uses a standard structure often used by function-calling models.
@@ -24,7 +24,7 @@ class FunctionCaller:
         )
 
     @staticmethod
-    def parse_response(response: str) -> Dict[str, Any]:
+    def parse_response(response: str) -> dict[str, Any]:
         """
         Try to parse JSON from the response.
         Handles:
@@ -35,6 +35,7 @@ class FunctionCaller:
         try:
             # 1. Try to find JSON within markdown code blocks first
             import re
+
             code_block_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
             match = re.search(code_block_pattern, response, re.DOTALL)
             if match:
@@ -46,12 +47,13 @@ class FunctionCaller:
             if start != -1 and end != -1:
                 json_str = response[start:end]
                 return json.loads(json_str)
-                
+
         except Exception as e:
             logger.debug(f"JSON parsing failed: {e}")
-            
+
         return {"content": response}
 
-def get_function_call(model_response: str) -> Dict[str, Any]:
+
+def get_function_call(model_response: str) -> dict[str, Any]:
     """Extract function call from text."""
     return FunctionCaller.parse_response(model_response)
