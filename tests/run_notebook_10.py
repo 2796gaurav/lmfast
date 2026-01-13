@@ -26,7 +26,7 @@ def run_notebook_10():
             # Fallback to mock for CPU environment speed in this test
             logger.info("Using mock model for CPU test speed")
             model_id = "mock"
-    except:
+    except Exception:
         model_id = "mock"
 
     if model_id == "mock":

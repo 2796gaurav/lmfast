@@ -21,7 +21,7 @@ Example:
     >>> lmfast.serve("./my_model", mcp=True)
 """
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 __author__ = "Gaurav Chauhan"
 
 import importlib.util

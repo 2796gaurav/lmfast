@@ -14,8 +14,10 @@ class LMFastMCPServer:
     def __init__(self, model_path: str, name: str = "lmfast-server"):
         try:
             from mcp.server.fastmcp import FastMCP
-        except ImportError:
-            raise ImportError("mcp package is not installed. Run `pip install lmfast[mcp]`")
+        except ImportError as e:
+            raise ImportError(
+                "mcp package is not installed. Run `pip install lmfast[mcp]`"
+            ) from e
 
         self.mcp = FastMCP(name)
         self.server = SLMServer(model_path)

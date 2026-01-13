@@ -31,7 +31,9 @@ def audit_notebook(path):
     except SyntaxError:
         # Ignore magic commands commonly found in colab (lines starting with ! or %)
         lines = full_code.splitlines()
-        clean_lines = [l for l in lines if not l.strip().startswith(("!", "%", "pip", "cd "))]
+        clean_lines = [
+            line for line in lines if not line.strip().startswith(("!", "%", "pip", "cd "))
+        ]
         clean_code = "\n".join(clean_lines)
         try:
             ast.parse(clean_code)

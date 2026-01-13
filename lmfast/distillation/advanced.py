@@ -282,7 +282,6 @@ class AdvancedDistillationTrainer:
         """Standard knowledge distillation."""
         logger.info("Running standard knowledge distillation...")
 
-
         # Create loss function
         loss_fn = DistillationLoss(temperature=self.config.temperature, alpha=self.config.alpha)
 

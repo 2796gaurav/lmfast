@@ -5,8 +5,8 @@ import lmfast
 
 def test_train_functional():
     """Test lmfast.train() functional API."""
-    with patch("lmfast.SLMTrainer") as MockTrainer:
-        mock_instance = MockTrainer.return_value
+    with patch("lmfast.SLMTrainer") as mock_trainer:
+        mock_instance = mock_trainer.return_value
 
         # Call train
         lmfast.train(
@@ -18,8 +18,8 @@ def test_train_functional():
         )
 
         # Verify initialization
-        MockTrainer.assert_called_once()
-        _, kwargs = MockTrainer.call_args
+        mock_trainer.assert_called_once()
+        _, kwargs = mock_trainer.call_args
         assert kwargs["model_config"].model_name == "test-model"
         assert kwargs["training_config"].max_steps == 100
         # Check if kwargs were passed to config
@@ -33,18 +33,18 @@ def test_train_functional():
 
 def test_serve_functional_http():
     """Test lmfast.serve() for HTTP."""
-    with patch("lmfast.inference.server.SLMServer") as MockServer:
-        mock_instance = MockServer.return_value
+    with patch("lmfast.inference.server.SLMServer") as mock_server:
+        mock_instance = mock_server.return_value
 
         lmfast.serve("test-model", port=9000)
 
-        MockServer.assert_called_with("test-model", use_vllm=True)
+        mock_server.assert_called_with("test-model", use_vllm=True)
         mock_instance.serve.assert_called_with(host="0.0.0.0", port=9000)
 
 
 @patch("lmfast.mcp.server.LMFastMCPServer")
 @patch.dict("sys.modules", {"mcp": MagicMock(), "mcp.server.fastmcp": MagicMock()})
-def test_serve_functional_mcp(MockMCPServer):
+def test_serve_functional_mcp(mock_mcp_server):
     """Test lmfast.serve() for MCP."""
 
     # We need to ensure import lmfast.mcp.server works or is mocked
@@ -54,5 +54,5 @@ def test_serve_functional_mcp(MockMCPServer):
 
     lmfast.serve("test-model", mcp=True, mcp_name="my-mcp")
 
-    MockMCPServer.assert_called_with("test-model", name="my-mcp")
-    MockMCPServer.return_value.run.assert_called_once()
+    mock_mcp_server.assert_called_with("test-model", name="my-mcp")
+    mock_mcp_server.return_value.run.assert_called_once()

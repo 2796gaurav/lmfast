@@ -25,7 +25,7 @@ def run_notebook(path):
             source = "".join(cell)
             # Filter out magics and pip installs
             clean_lines = [
-                l for l in source.splitlines() if not l.strip().startswith(("!", "%", "pip"))
+                line for line in source.splitlines() if not line.strip().startswith(("!", "%", "pip"))
             ]
             full_code += "\n".join(clean_lines) + "\n\n"
 

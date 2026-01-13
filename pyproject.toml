@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lmfast"
-version = "0.3.5"
+version = "0.3.6"
 description = "Democratized Small Language Model Training - Train, fine-tune, distill, and deploy sub-500M parameter models on Colab T4 in 30-40 minutes"
 readme = "README.md"
 license = {text = "Apache-2.0"}

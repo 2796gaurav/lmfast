@@ -398,9 +398,7 @@ Answer:"""
         return answer
 
     @classmethod
-    def from_files(
-        cls, model: str | Any, file_paths: list[str], **kwargs
-    ) -> "LightweightRAG":
+    def from_files(cls, model: str | Any, file_paths: list[str], **kwargs) -> "LightweightRAG":
         """
         Create RAG from files.
 
